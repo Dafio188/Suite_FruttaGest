@@ -13,9 +13,10 @@ L'interfaccia utente è studiata seguendo una rigorosa visione architetturale fo
 ## 🚀 Funzionalità Implementate (Stato Attuale)
 
 ### 🎨 Frontend & Design System
-- **Stack Tecnologico:** React, Vite, TypeScript, Tailwind CSS, Lucide Icons, Recharts, Framer Motion (per animazioni in arrivo).
+- **Stack Tecnologico:** React, Vite, TypeScript, Tailwind CSS, Lucide Icons, Recharts, Framer Motion.
 - **Estetica Premium:** Tema chiaro/scuro ottimizzato, sfondi con profondità (backdrop-blur), layout focalizzati sull'utente senza rumore visivo.
 - **Struttura a Moduli:** Architettura a schede per passare facilmente tra le sezioni (Dashboard, Catalogo, Market, Contatti).
+- **Autenticazione "Sliding Monolith":** Sistema di accesso e registrazione unificato con animazioni fisiche a molla, design glassmorphic e recupero password integrato.
 
 ### 📦 Gestione Market (Lotti e Vendite)
 - **Registro Giornaliero (Daily Sales Journal):** Visualizzazione dei lotti attivi a magazzino, con barra di avanzamento visiva (colli iniziali vs colli venduti). 
@@ -63,6 +64,7 @@ Nonostante l'avanzato stato dell'interfaccia grafica, occorre completare l'integ
 5. **Polish, UX Assoluta & QA:**
    - Rafforzare i controlli di accessibilità (QA & Accessibility Agent).
    - Inserimento Skeleton Screens e feedback asincroni (Toast/Sonner) durante le comunicazioni tra Frontend e RestAPI. 
+   - Ottimizzazione delle performance delle animazioni Framer Motion su dispositivi datati.
 
 ---
 *Progetto curato e assistito da Antigravity OS - Ecosistema Multi-Agente AI.*
