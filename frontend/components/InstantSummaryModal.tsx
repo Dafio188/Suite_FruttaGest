@@ -14,12 +14,12 @@ interface InstantSummaryModalProps {
 }
 
 const InstantSummaryModal: React.FC<InstantSummaryModalProps> = ({ onClose, partner, lots, sales, products }) => {
-  
+
   const summaryData = useMemo(() => {
     let grandTotalRevenue = 0;
     const lotsDetails = lots.map(lot => {
       const salesForLot = sales.filter(s => s.lotId === lot.id && s.status === 'COMPLETED');
-      
+
       const salesByPrice = salesForLot.reduce((acc, sale) => {
         const priceKey = sale.price.toFixed(2);
         if (!acc[priceKey]) {
@@ -36,7 +36,7 @@ const InstantSummaryModal: React.FC<InstantSummaryModalProps> = ({ onClose, part
 
       const lotRevenue = Object.values(salesByPrice).reduce((sum, data) => sum + data.subtotal, 0);
       grandTotalRevenue += lotRevenue;
-      
+
       const totalPackagesSold = salesForLot.reduce((sum, s) => sum + s.numberOfPackages, 0);
       const totalWeightSold = salesForLot.reduce((sum, s) => sum + (s.actualWeight || s.quantity), 0);
       const averagePrice = totalWeightSold > 0 ? lotRevenue / totalWeightSold : 0;
@@ -60,7 +60,7 @@ const InstantSummaryModal: React.FC<InstantSummaryModalProps> = ({ onClose, part
 
   const chartData = useMemo(() => {
     if (!summaryData || !summaryData.lotsDetails) return [];
-    return summaryData.lotsDetails.flatMap(ld => 
+    return summaryData.lotsDetails.flatMap(ld =>
       Object.entries(ld.salesByPrice).map(([price, data]) => ({
         price: `€${price}`,
         quantity: data.totalWeight,
@@ -79,7 +79,7 @@ const InstantSummaryModal: React.FC<InstantSummaryModalProps> = ({ onClose, part
           </div>
           <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-100"><X size={24} /></button>
         </div>
-        
+
         <div className="flex-grow overflow-y-auto p-6 space-y-6 bg-slate-50">
           {summaryData.lotsDetails.map(({ lot, product, salesByPrice, lotRevenue, totalPackagesSold, averagePrice }) => (
             <div key={lot.id} className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
@@ -89,50 +89,50 @@ const InstantSummaryModal: React.FC<InstantSummaryModalProps> = ({ onClose, part
               </div>
               <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-1 space-y-4">
-                    <div className="bg-slate-100 p-3 rounded-md">
-                        <p className="text-xs text-slate-500 font-medium flex items-center gap-1"><Package size={14}/> Colli Venduti</p>
-                        <p className="text-xl font-bold text-slate-700">{totalPackagesSold} / {lot.numberOfPackages}</p>
-                    </div>
-                    <div className="bg-slate-100 p-3 rounded-md">
-                        <p className="text-xs text-slate-500 font-medium flex items-center gap-1"><Euro size={14}/> Prezzo Medio</p>
-                        <p className="text-xl font-bold text-slate-700">€ {averagePrice.toFixed(2)} / kg</p>
-                    </div>
-                     <div className="bg-slate-100 p-3 rounded-md">
-                        <p className="text-xs text-slate-500 font-medium flex items-center gap-1"><TrendingUp size={14}/> Ricavo Partita</p>
-                        <p className="text-xl font-bold text-slate-700">€ {lotRevenue.toFixed(2)}</p>
-                    </div>
+                  <div className="bg-slate-100 p-3 rounded-md">
+                    <p className="text-xs text-slate-500 font-medium flex items-center gap-1"><Package size={14} /> Colli Venduti</p>
+                    <p className="text-xl font-bold text-slate-700">{totalPackagesSold} / {lot.numberOfPackages}</p>
+                  </div>
+                  <div className="bg-slate-100 p-3 rounded-md">
+                    <p className="text-xs text-slate-500 font-medium flex items-center gap-1"><Euro size={14} /> Prezzo Medio</p>
+                    <p className="text-xl font-bold text-slate-700">€ {averagePrice.toFixed(2)} / kg</p>
+                  </div>
+                  <div className="bg-slate-100 p-3 rounded-md">
+                    <p className="text-xs text-slate-500 font-medium flex items-center gap-1"><TrendingUp size={14} /> Ricavo Partita</p>
+                    <p className="text-xl font-bold text-slate-700">€ {lotRevenue.toFixed(2)}</p>
+                  </div>
                 </div>
                 <div className="md:col-span-2 h-48">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="price" fontSize={10} />
-                            <YAxis fontSize={10} />
-                            <Tooltip formatter={(value) => `${value} kg`} />
-                            <Bar dataKey="quantity" name="Quantità">
-                                {chartData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#10b981' : '#2dd4bf'} />
-                                ))}
-                            </Bar>
-                        </BarChart>
-                    </ResponsiveContainer>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="price" fontSize={10} />
+                      <YAxis fontSize={10} />
+                      <Tooltip formatter={(value: any) => `${value} kg`} />
+                      <Bar dataKey="quantity" name="Quantità">
+                        {chartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#10b981' : '#2dd4bf'} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
               <div className="p-4 border-t">
                 <h5 className="text-xs font-bold uppercase text-slate-500 mb-2">Dettaglio Vendite (Raggruppate per Prezzo)</h5>
                 <table className="w-full text-xs">
-                    <thead><tr className="border-b"><th className="py-1 text-left">N. Colli</th><th className="py-1 text-left">Peso Lordo</th><th className="py-1 text-left">Peso Netto</th><th className="py-1 text-left">Prezzo</th><th className="py-1 text-right">Imponibile</th></tr></thead>
-                    <tbody>
-                        {Object.entries(salesByPrice).map(([price, data]) => (
-                            <tr key={price} className="border-b last:border-none">
-                                <td className="py-1.5">{data.totalPackages}</td>
-                                <td className="py-1.5">{data.totalWeight.toFixed(2)} kg</td>
-                                <td className="py-1.5">{data.totalNetWeight.toFixed(2)} kg</td>
-                                <td className="py-1.5 font-semibold">€ {price}/kg</td>
-                                <td className="py-1.5 text-right font-bold">€ {data.subtotal.toFixed(2)}</td>
-                            </tr>
-                        ))}
-                    </tbody>
+                  <thead><tr className="border-b"><th className="py-1 text-left">N. Colli</th><th className="py-1 text-left">Peso Lordo</th><th className="py-1 text-left">Peso Netto</th><th className="py-1 text-left">Prezzo</th><th className="py-1 text-right">Imponibile</th></tr></thead>
+                  <tbody>
+                    {Object.entries(salesByPrice).map(([price, data]) => (
+                      <tr key={price} className="border-b last:border-none">
+                        <td className="py-1.5">{data.totalPackages}</td>
+                        <td className="py-1.5">{data.totalWeight.toFixed(2)} kg</td>
+                        <td className="py-1.5">{data.totalNetWeight.toFixed(2)} kg</td>
+                        <td className="py-1.5 font-semibold">€ {price}/kg</td>
+                        <td className="py-1.5 text-right font-bold">€ {data.subtotal.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
                 </table>
               </div>
             </div>

@@ -21,13 +21,14 @@ const PartnerModal: React.FC<PartnerModalProps> = ({ onClose, onSave, partnerToE
 
   useEffect(() => {
     if (partnerToEdit) {
-      setPartnerData(partnerToEdit);
+      const { id, ...rest } = partnerToEdit;
+      setPartnerData(rest);
     }
   }, [partnerToEdit]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setPartnerData(prev => ({ ...prev, [name]: value }));
+    setPartnerData(prev => ({ ...prev, [name]: value } as any));
   };
 
   const handleSubmit = (e: React.FormEvent) => {

@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { Sale, Partner, Product, Lot } from '../types';
-import { FileText, CreditCard, Truck, CheckCircle, CircleDollarSign, Search, FileCheck, Save, XCircle } from 'lucide-react';
+import { FileText, CreditCard, CheckCircle, CircleDollarSign, Search, FileCheck, Save, XCircle } from 'lucide-react';
 
 // #region CustomerSalesDetail Component
 interface CustomerSalesDetailProps {
@@ -24,7 +24,7 @@ const CustomerSalesDetail: React.FC<CustomerSalesDetailProps> = ({ customer, sal
   }, [customer]);
 
   const handleSelectionChange = (saleId: string) => {
-    setSelectedSaleIds(prev => 
+    setSelectedSaleIds(prev =>
       prev.includes(saleId) ? prev.filter(id => id !== saleId) : [...prev, saleId]
     );
   };
@@ -32,12 +32,12 @@ const CustomerSalesDetail: React.FC<CustomerSalesDetailProps> = ({ customer, sal
   const handleFieldChange = (saleId: string, field: keyof Sale, value: any) => {
     setEditableSales(prev => ({
       ...prev,
-      [saleId]: { ...prev[saleId], [field]: value }
+      [saleId]: { ...(prev[saleId] || {}), [field]: value }
     }));
   };
 
   const handleSaveSale = (sale: Sale) => {
-    const updatedSaleData = { ...sale, ...editableSales[sale.id] };
+    const updatedSaleData = { ...sale, ...(editableSales[sale.id] || {}) };
     onUpdateSale(updatedSaleData);
     setEditableSales(prev => {
       const newState = { ...prev };
@@ -50,9 +50,9 @@ const CustomerSalesDetail: React.FC<CustomerSalesDetailProps> = ({ customer, sal
   const selectedTotal = useMemo(() => selectedSales.reduce((sum, s) => sum + (s.totalAmount - s.amountPaid), 0), [selectedSales]);
 
   const getPaymentStatusIcon = (status: Sale['paymentStatus']) => {
-    if (status === 'PAID') return <CheckCircle size={14} className="text-green-500" title="Pagato"/>;
-    if (status === 'PARTIALLY_PAID') return <CircleDollarSign size={14} className="text-yellow-500" title="Pagato in parte"/>;
-    return <CircleDollarSign size={14} className="text-red-500" title="Non pagato"/>;
+    if (status === 'PAID') return <CheckCircle size={14} className="text-green-500" title="Pagato" />;
+    if (status === 'PARTIALLY_PAID') return <CircleDollarSign size={14} className="text-yellow-500" title="Pagato in parte" />;
+    return <CircleDollarSign size={14} className="text-red-500" title="Non pagato" />;
   };
 
   return (
@@ -80,19 +80,19 @@ const CustomerSalesDetail: React.FC<CustomerSalesDetailProps> = ({ customer, sal
               const lot = lots.find(l => l.id === sale.lotId);
               const product = products.find(p => p.id === lot?.productId);
               const isEditing = !!editableSales[sale.id];
-              const currentData = { ...sale, ...editableSales[sale.id] };
+              const currentData = { ...sale, ...(editableSales[sale.id] || {}) };
               return (
                 <tr key={sale.id} className={`border-b last:border-none ${isEditing ? 'bg-yellow-50' : ''}`}>
-                  <td className="py-1 pl-1"><input type="checkbox" checked={selectedSaleIds.includes(sale.id)} onChange={() => handleSelectionChange(sale.id)} disabled={!!sale.documentId || sale.paymentStatus === 'PAID'} className="disabled:opacity-50"/></td>
+                  <td className="py-1 pl-1"><input type="checkbox" checked={selectedSaleIds.includes(sale.id)} onChange={() => handleSelectionChange(sale.id)} disabled={!!sale.documentId || sale.paymentStatus === 'PAID'} className="disabled:opacity-50" /></td>
                   <td className="py-1">{product?.name} <span className="text-slate-400">({sale.lotId})</span></td>
                   <td className="py-1 text-center">{sale.numberOfPackages}</td>
-                  <td className="py-1"><input type="number" value={currentData.actualWeight} onChange={e => handleFieldChange(sale.id, 'actualWeight', Number(e.target.value))} className="w-16 text-right bg-transparent border-b rounded-none p-0.5"/></td>
-                  <td className="py-1"><input type="number" value={currentData.price} onChange={e => handleFieldChange(sale.id, 'price', Number(e.target.value))} className="w-16 text-right bg-transparent border-b rounded-none p-0.5"/></td>
-                  <td className="py-1"><input type="number" value={currentData.additionalTare} onChange={e => handleFieldChange(sale.id, 'additionalTare', Number(e.target.value))} className="w-12 text-right bg-transparent border-b rounded-none p-0.5"/></td>
+                  <td className="py-1"><input type="number" value={currentData.actualWeight || ''} onChange={e => handleFieldChange(sale.id, 'actualWeight', Number(e.target.value))} className="w-16 text-right bg-transparent border-b rounded-none p-0.5" /></td>
+                  <td className="py-1"><input type="number" value={currentData.price || ''} onChange={e => handleFieldChange(sale.id, 'price', Number(e.target.value))} className="w-16 text-right bg-transparent border-b rounded-none p-0.5" /></td>
+                  <td className="py-1"><input type="number" value={currentData.additionalTare || ''} onChange={e => handleFieldChange(sale.id, 'additionalTare', Number(e.target.value))} className="w-12 text-right bg-transparent border-b rounded-none p-0.5" /></td>
                   <td className="py-1 text-right font-semibold">€{sale.totalAmount.toFixed(2)}</td>
                   <td className="py-1 text-center flex justify-center gap-1">
-                    {isEditing && <button onClick={() => handleSaveSale(sale)} className="text-green-600 p-1"><Save size={14}/></button>}
-                    <button onClick={() => onDeleteSale(sale)} className="text-red-600 p-1"><XCircle size={14}/></button>
+                    {isEditing && <button onClick={() => handleSaveSale(sale)} className="text-green-600 p-1"><Save size={14} /></button>}
+                    <button onClick={() => onDeleteSale(sale)} className="text-red-600 p-1"><XCircle size={14} /></button>
                   </td>
                 </tr>
               );
@@ -107,10 +107,10 @@ const CustomerSalesDetail: React.FC<CustomerSalesDetailProps> = ({ customer, sal
             <p className="text-sm font-bold text-emerald-600">€{selectedTotal.toFixed(2)}</p>
           </div>
           <div className="grid grid-cols-3 gap-2">
-            <button onClick={() => onAccountingAction(selectedSales, 'DDT')} className="text-xs bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 flex items-center justify-center gap-1"><FileText size={14}/> DDT</button>
-            <button onClick={() => onAccountingAction(selectedSales, 'FATTURA')} className="text-xs bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 flex items-center justify-center gap-1"><FileText size={14}/> Fattura</button>
-            <button onClick={() => onAccountingAction(selectedSales, 'SCONTRINO')} className="text-xs bg-gray-500 text-white p-2 rounded-md hover:bg-gray-600 flex items-center justify-center gap-1"><FileCheck size={14}/> Scontrino</button>
-            <button onClick={() => onAccountingAction(selectedSales, 'PAY')} className="col-span-3 text-sm bg-green-500 text-white p-2 rounded-md hover:bg-green-600 flex items-center justify-center gap-1"><CreditCard size={14}/> Registra Pagamento</button>
+            <button onClick={() => onAccountingAction(selectedSales, 'DDT')} className="text-xs bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 flex items-center justify-center gap-1"><FileText size={14} /> DDT</button>
+            <button onClick={() => onAccountingAction(selectedSales, 'INVOICE')} className="text-xs bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 flex items-center justify-center gap-1"><FileText size={14} /> Fattura</button>
+            <button onClick={() => onAccountingAction(selectedSales, 'SCONTRINO')} className="text-xs bg-gray-500 text-white p-2 rounded-md hover:bg-gray-600 flex items-center justify-center gap-1"><FileCheck size={14} /> Scontrino</button>
+            <button onClick={() => onAccountingAction(selectedSales, 'PAY')} className="col-span-3 text-sm bg-green-500 text-white p-2 rounded-md hover:bg-green-600 flex items-center justify-center gap-1"><CreditCard size={14} /> Registra Pagamento</button>
           </div>
         </div>
       )}
@@ -154,19 +154,23 @@ const CustomerAccounting: React.FC<CustomerAccountingProps> = ({ sales, partners
         } else if (summary.totalPaid > 0) {
           status = 'PARTIALLY_PAID';
         }
+        const partner = partners.find(p => p.id === id);
+        if (!partner) return null; // Ignora vendite di clienti MOCK sconosciuti o disallineati
+
         return {
-          ...partners.find(p => p.id === id)!,
+          ...partner,
           ...summary,
           status,
         };
       })
-      .filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
+      .filter((c): c is (Partner & { totalDue: number; totalPaid: number; totalBilled: number; status: 'PAID' | 'PARTIALLY_PAID' | 'UNPAID' }) => c !== null)
+      .filter(c => (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()));
   }, [sales, partners, todayString, searchTerm]);
 
   const getCustomerStatusIcon = (status: 'PAID' | 'PARTIALLY_PAID' | 'UNPAID') => {
-    if (status === 'PAID') return <CheckCircle size={18} className="text-green-500"/>;
-    if (status === 'PARTIALLY_PAID') return <CircleDollarSign size={18} className="text-yellow-500"/>;
-    return <CircleDollarSign size={18} className="text-red-500"/>;
+    if (status === 'PAID') return <CheckCircle size={18} className="text-green-500" />;
+    if (status === 'PARTIALLY_PAID') return <CircleDollarSign size={18} className="text-yellow-500" />;
+    return <CircleDollarSign size={18} className="text-red-500" />;
   };
 
   const selectedCustomerSales = useMemo(() => {
@@ -181,7 +185,7 @@ const CustomerAccounting: React.FC<CustomerAccountingProps> = ({ sales, partners
           <h3 className="font-bold text-slate-700">Clienti di Oggi</h3>
           <div className="relative mt-2">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-            <input 
+            <input
               type="text"
               placeholder="Cerca cliente..."
               value={searchTerm}
@@ -204,7 +208,7 @@ const CustomerAccounting: React.FC<CustomerAccountingProps> = ({ sales, partners
       </div>
       <div className="flex-grow">
         {selectedCustomerId ? (
-          <CustomerSalesDetail 
+          <CustomerSalesDetail
             customer={partners.find(p => p.id === selectedCustomerId)!}
             sales={selectedCustomerSales}
             lots={lots}

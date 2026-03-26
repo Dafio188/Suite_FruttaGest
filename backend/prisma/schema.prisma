@@ -1,0 +1,190 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// ----------------------------------------------------------------------------
+// Modelli principali dell'applicativo Fruttagest
+// ----------------------------------------------------------------------------
+
+model Partner {
+  id             String          @id @default(cuid())
+  type           PartnerType
+  name           String
+  vatNumber      String?
+  taxId          String?
+  address        String?
+  city           String?
+  phone          String?
+  email          String?
+  paymentTerms   Int             @default(0) // Giorni di pagamento (es 30, 60, 90)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  // Relazioni
+  lotsProvided   Lot[]           @relation("SupplierLots")
+  salesTo        Sale[]          @relation("CustomerSales")
+  payables       Payable[]
+}
+
+enum PartnerType {
+  CUSTOMER
+  SUPPLIER
+  BOTH
+}
+
+model Product {
+  id             String          @id @default(cuid())
+  name           String
+  category       String
+  unit           String          @default("Kg")
+  tareWeight     Float           @default(0) // Peso standard della tara/imballaggio
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  lots           Lot[]
+}
+
+model Lot {
+  id               String          @id @default(cuid())
+  lotNumber        String          @unique // (es: L2024-001) Codice interno lotto
+  supplierId       String
+  productId        String
+  type             LotType         // COMMISSION (Conto Deposito) o PURCHASE (Acquisto)
+  initialQuantity  Float
+  currentQuantity  Float
+  entryDate        DateTime        @default(now())
+  purchasePrice    Float?          // Prezzo acquisto al Kg (solo se type = PURCHASE)
+  status           LotStatus       @default(ACTIVE)
+  
+  // Tracciabilità e dettagli di mercato
+  ssn              String?         // Codice di lotto di origine del fornitore
+  documentNumber   String?         // Numero DDT fornitore
+  acquisitionType  String          @default("PURCHASE") // PURCHASE o CONSIGNMENT
+  quality          String          @default("I")        // I, II, Extra
+  packaging        String          @default("Sfuso")
+  commissionRate   Float?          // Solo per CONSIGNMENT
+  numberOfPackages Int             @default(0)
+  tarePerPackage   Float           @default(0)
+  
+  // Liquidazione (se in commissione)
+  settlementId     String?
+  purchasePaymentStatus String     @default("UNPAID")
+
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  // Relazioni
+  supplier         Partner         @relation("SupplierLots", fields: [supplierId], references: [id])
+  product          Product         @relation(fields: [productId], references: [id])
+  movements        LotMovement[]
+  sales            Sale[]
+}
+
+enum LotType {
+  COMMISSION // Vendita in commissione (proprietà fornitore fino a liquidazione)
+  PURCHASE   // Comprato direttamente in mercato
+}
+
+enum LotStatus {
+  ACTIVE
+  CLOSED
+  RETURNED
+}
+
+model LotMovement {
+  id               String          @id @default(cuid())
+  lotId            String
+  quantity         Float           // Positivo o Negativo
+  type             MovementType
+  date             DateTime        @default(now())
+  userId           String?         // Operatore che ha fatto il movimento
+  reason           String?         // Es. "Vendita Sale-001", "Calo peso", "Scarto reso"
+
+  lot              Lot             @relation(fields: [lotId], references: [id])
+}
+
+enum MovementType {
+  IN
+  OUT
+  ADJUSTMENT  // Calo peso / Scarto
+  RETURN      // Reso al fornitore
+}
+
+model Sale {
+  id               String          @id @default(cuid())
+  customerId       String
+  lotId            String
+  saleDate         DateTime        @default(now())
+
+  // Quantità
+  numberOfPackages Int             @default(0)
+  orderedQuantity  Float           @map("quantity") // mappato con il nome dal db
+  actualWeight     Float?          // Pesata reale sul muletto
+  additionalTare   Float           @default(0)
+  unitPrice        Float           @map("price") // mappato con il nome dal DB o rinominato nel costruttore
+  totalAmount      Float           @default(0)
+  status           String          @default("COMPLETED") // PENDING_PICKING o COMPLETED
+
+  // Documentazione e Pagamenti
+  documentType     DocumentType    @default(NONE)
+  documentId       String?         // Se fattura o DDT generato
+  paymentStatus    PaymentStatus   @default(UNPAID)
+  amountPaid       Float           @default(0)
+  deliveryStatus   DeliveryStatus  @default(PENDING)
+
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  // Relazioni
+  customer         Partner         @relation("CustomerSales", fields: [customerId], references: [id])
+  lot              Lot             @relation(fields: [lotId], references: [id])
+}
+
+enum DocumentType {
+  NONE
+  DDT
+  INVOICE
+  SCONTRINO
+}
+
+enum PaymentStatus {
+  UNPAID
+  PARTIALLY_PAID
+  PAID
+}
+
+enum DeliveryStatus {
+  PENDING
+  PENDING_PICKING
+  PICKED
+  DELIVERED
+}
+
+model Payable {
+  id               String          @id @default(cuid())
+  partnerId        String
+  amount           Float
+  dueDate          DateTime
+  description      String
+  status           PayableStatus   @default(UNPAID)
+  
+  // Se già pagato
+  paymentDate      DateTime?
+  paymentMethod    String?
+  paymentReference String?
+  
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  partner          Partner         @relation(fields: [partnerId], references: [id])
+}
+
+enum PayableStatus {
+  UNPAID
+  PAID
+}

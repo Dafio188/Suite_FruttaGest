@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Warehouse, Users, BarChart, ArrowRightLeft, Truck, ClipboardList, BookOpen, Landmark } from 'lucide-react';
 import { MOCK_LOTS, MOCK_PRODUCTS, MOCK_PARTNERS, MOCK_SALES } from '../constants';
-import { Lot, Partner, Sale, MovementType, Payable } from '../types';
+import { Lot, Partner, Sale, MovementType, Payable, Product } from '../types';
 import LotList from './LotList';
 import LotDetailModal from './LotDetailModal';
 import NewLotWizard from './NewLotWizard';
@@ -22,27 +22,71 @@ import RecordSettlementPaymentModal from './RecordSettlementPaymentModal';
 import ReturnSlipModal from './ReturnSlipModal';
 import SupplierPayments from './SupplierPayments';
 import InstantSummaryModal from './InstantSummaryModal';
+import ProductList from './ProductList'; // New import for ProductList
 
 const MarketPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('partite');
+  const [activeTab, setActiveTab] = useState<'magazzino' | 'clienti' | 'vendite' | 'partite' | 'logistica' | 'bi' | 'prodotti'>('magazzino');
   const [salesSubTab, setSalesSubTab] = useState('accounting');
   const [partnerSubTab, setPartnerSubTab] = useState('list');
-  
+
   // State for Lots
-  const [lots, setLots] = useState<Lot[]>(MOCK_LOTS);
+  const [lots, setLots] = useState<Lot[]>([]);
   const [selectedLot, setSelectedLot] = useState<Lot | null>(null);
   const [lotToEdit, setLotToEdit] = useState<Lot | null>(null);
   const [lotToDelete, setLotToDelete] = useState<Lot | null>(null);
   const [isLotWizardOpen, setIsLotWizardOpen] = useState(false);
 
   // State for Partners
-  const [partners, setPartners] = useState<Partner[]>(MOCK_PARTNERS);
+  const [partners, setPartners] = useState<Partner[]>([]);
   const [partnerToEdit, setPartnerToEdit] = useState<Partner | null>(null);
   const [partnerToDelete, setPartnerToDelete] = useState<Partner | null>(null);
   const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
 
   // State for Sales
-  const [sales, setSales] = useState<Sale[]>(MOCK_SALES);
+  // State for Sales
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS); // Changed type to Product[]
+
+  const fetchApiData = async () => {
+    try {
+      const partnersRes = await fetch('/api/partners');
+      if (partnersRes.ok) {
+        const partnersData = await partnersRes.json();
+        setPartners(partnersData.length > 0 ? partnersData : MOCK_PARTNERS);
+      }
+
+      const lotsRes = await fetch('/api/lots');
+      if (lotsRes.ok) {
+        const lotsData = await lotsRes.json();
+        setLots(lotsData.length > 0 ? lotsData : MOCK_LOTS);
+      }
+
+      const salesRes = await fetch('/api/sales');
+      if (salesRes.ok) {
+        const salesData = await salesRes.json();
+        setSales(salesData.length > 0 ? salesData : MOCK_SALES);
+      } else {
+        setSales(MOCK_SALES);
+      }
+
+      const productsRes = await fetch('/api/products');
+      if (productsRes.ok) {
+        const productsData = await productsRes.json();
+        if (productsData.length > 0) setProducts(productsData);
+      }
+
+    } catch (err) {
+      console.error("Errore fetch dati API, fallback a Mock:", err);
+      setPartners(MOCK_PARTNERS);
+      setLots(MOCK_LOTS);
+      setSales(MOCK_SALES);
+    }
+  };
+
+  // Dati dal Backend API
+  useEffect(() => {
+    fetchApiData();
+  }, []);
   const [isSaleWizardOpen, setIsSaleWizardOpen] = useState(false);
   const [customerForSale, setCustomerForSale] = useState<Partner | null>(null);
   const [saleForPicking, setSaleForPicking] = useState<Sale | null>(null);
@@ -53,7 +97,7 @@ const MarketPage: React.FC = () => {
 
   // State for Settlement
   const [partnerForSettlement, setPartnerForSettlement] = useState<Partner | null>(null);
-  const [settlementToRecord, setSettlementToRecord] = useState<{partner: Partner, amount: number, lotIds: string[]} | null>(null);
+  const [settlementToRecord, setSettlementToRecord] = useState<{ partner: Partner, amount: number, lotIds: string[] } | null>(null);
   const [lotToReturn, setLotToReturn] = useState<Lot | null>(null);
   const [partnerForSummary, setPartnerForSummary] = useState<Partner | null>(null);
 
@@ -64,6 +108,7 @@ const MarketPage: React.FC = () => {
     { id: 'partite', label: 'Partite & Commissioni', icon: ArrowRightLeft },
     { id: 'logistica', label: 'Logistica', icon: Truck },
     { id: 'bi', label: 'Business Intelligence', icon: BarChart },
+    { id: 'prodotti', label: 'Prodotti', icon: BookOpen }, // New tab for Products
   ];
 
   // Lot Handlers
@@ -72,19 +117,39 @@ const MarketPage: React.FC = () => {
   const handleOpenLotWizardForCreate = () => { setLotToEdit(null); setIsLotWizardOpen(true); };
   const handleOpenLotWizardForEdit = (lot: Lot) => { setLotToEdit(lot); setIsLotWizardOpen(true); };
   const handleCloseLotWizard = () => { setIsLotWizardOpen(false); setLotToEdit(null); };
-  const handleSaveLot = (savedLotData: Lot) => {
-    if (lotToEdit) {
-      setLots(prev => prev.map(l => l.id === lotToEdit.id ? { ...l, ...savedLotData, id: l.id } : l));
-    } else {
-      const newLot = { ...savedLotData, id: `L2024-${Date.now()}`, ssn: `TRAC-${Date.now()}` };
-      setLots(prev => [newLot, ...prev]);
+  const handleSaveLot = async (savedLotData: Lot) => {
+    try {
+      if (lotToEdit) {
+        // Here we could implement a PUT request to /api/lots/:id in the future
+        setLots((prev: Lot[]) => prev.map(l => l.id === lotToEdit.id ? { ...l, ...savedLotData, id: l.id } : l));
+        handleCloseLotWizard();
+      } else {
+        const newLotPayload = { ...savedLotData, id: `L2024-${Date.now()}`, ssn: `TRAC-${Date.now()}` };
+        const res = await fetch('/api/lots', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newLotPayload)
+        });
+        if (res.ok) {
+          await fetchApiData();
+          handleCloseLotWizard();
+        } else {
+          // Fallback locale in caso di errore non bloccante
+          setLots((prev: Lot[]) => [newLotPayload, ...prev]);
+          handleCloseLotWizard();
+        }
+      }
+    } catch (err) {
+      console.error("Errore salvataggio lotto", err);
+      // Fallback
+      setLots((prev: Lot[]) => [{ ...savedLotData, id: `L2024-${Date.now()}`, ssn: `TRAC-${Date.now()}` }, ...prev]);
+      handleCloseLotWizard();
     }
-    handleCloseLotWizard();
   };
   const handleDeleteLotRequest = (lot: Lot) => setLotToDelete(lot);
   const handleConfirmLotDelete = () => {
     if (lotToDelete) {
-      setLots(prev => prev.filter(l => l.id !== lotToDelete.id));
+      setLots((prev: Lot[]) => prev.filter(l => l.id !== lotToDelete.id));
       setLotToDelete(null);
     }
   };
@@ -93,19 +158,64 @@ const MarketPage: React.FC = () => {
   const handleOpenPartnerModalForCreate = () => { setPartnerToEdit(null); setIsPartnerModalOpen(true); };
   const handleOpenPartnerModalForEdit = (partner: Partner) => { setPartnerToEdit(partner); setIsPartnerModalOpen(true); };
   const handleClosePartnerModal = () => { setIsPartnerModalOpen(false); setPartnerToEdit(null); };
-  const handleSavePartner = (savedPartnerData: Partner) => {
-    if (partnerToEdit) {
-      setPartners(prev => prev.map(p => p.id === partnerToEdit.id ? { ...p, ...savedPartnerData } : p));
-    } else {
-      const newPartner = { ...savedPartnerData, id: `P-${Date.now()}` };
-      setPartners(prev => [newPartner, ...prev]);
+  const handleSavePartner = async (savedPartnerData: Partner) => {
+    try {
+      if (partnerToEdit) {
+        const res = await fetch(`/api/partners/${partnerToEdit.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...savedPartnerData, id: partnerToEdit.id })
+        });
+        if (res.ok) {
+          await fetchApiData();
+          handleClosePartnerModal();
+        } else {
+          // Fallback locale in caso di errore
+          setPartners((prev: Partner[]) => prev.map(p => p.id === partnerToEdit.id ? { ...p, ...savedPartnerData } : p));
+          handleClosePartnerModal();
+        }
+      } else {
+        const newPartnerPayload = { ...savedPartnerData, id: `P-${Date.now()}` };
+        const res = await fetch('/api/partners', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newPartnerPayload)
+        });
+        if (res.ok) {
+          await fetchApiData();
+          handleClosePartnerModal();
+        } else {
+          setPartners((prev: Partner[]) => [newPartnerPayload, ...prev]);
+          handleClosePartnerModal();
+        }
+      }
+    } catch (err) {
+      console.error("Errore salvataggio partner", err);
+      if (partnerToEdit) {
+        setPartners((prev: Partner[]) => prev.map(p => p.id === partnerToEdit.id ? { ...p, ...savedPartnerData } : p));
+      } else {
+        setPartners((prev: Partner[]) => [{ ...savedPartnerData, id: `P-${Date.now()}` }, ...prev]);
+      }
+      handleClosePartnerModal();
     }
-    handleClosePartnerModal();
   };
   const handleDeletePartnerRequest = (partner: Partner) => setPartnerToDelete(partner);
-  const handleConfirmPartnerDelete = () => {
+  const handleConfirmPartnerDelete = async () => {
     if (partnerToDelete) {
-      setPartners(prev => prev.filter(p => p.id !== partnerToDelete.id));
+      try {
+        const res = await fetch(`/api/partners/${partnerToDelete.id}`, {
+          method: 'DELETE',
+        });
+        if (res.ok) {
+          await fetchApiData();
+        } else {
+          alert("Impossibile eliminare il partner.");
+          setPartners((prev: Partner[]) => prev.filter(p => p.id !== partnerToDelete.id));
+        }
+      } catch (err) {
+        console.error("Errore eliminazione partner", err);
+        setPartners((prev: Partner[]) => prev.filter(p => p.id !== partnerToDelete.id));
+      }
       setPartnerToDelete(null);
     }
   };
@@ -115,11 +225,29 @@ const MarketPage: React.FC = () => {
     setCustomerForSale(customer);
     setIsSaleWizardOpen(true);
   };
-  const handleConfirmSale = (saleData: Omit<Sale, 'id' | 'status' | 'paymentStatus' | 'deliveryStatus' | 'amountPaid'>) => {
-    const newSale = { ...saleData, id: `SALE-${Date.now()}`, status: 'PENDING_PICKING' as const, paymentStatus: 'UNPAID' as const, deliveryStatus: 'PENDING' as const, amountPaid: 0 };
-    setSales(prev => [newSale, ...prev]);
-    setIsSaleWizardOpen(false);
-    setCustomerForSale(null);
+  const handleConfirmSale = async (saleData: Omit<Sale, 'id' | 'status' | 'paymentStatus' | 'deliveryStatus' | 'amountPaid'>) => {
+    try {
+      const res = await fetch('/api/sales', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(saleData)
+      });
+      if (res.ok) {
+        // Ricarichiamo i dati dal server per avere lotto e sales aggiornati col db
+        await fetchApiData();
+        setIsSaleWizardOpen(false);
+        setCustomerForSale(null);
+      } else {
+        alert("Errore durante il salvataggio della vendita sul server.");
+      }
+    } catch (err) {
+      console.error("Server API fallita, fallback locale", err);
+      // Fallback a locale come faceva prima:
+      const newSale = { ...saleData, id: `SALE-${Date.now()}`, status: 'PENDING_PICKING' as const, paymentStatus: 'UNPAID' as const, deliveryStatus: 'PENDING' as const, amountPaid: 0 };
+      setSales(prev => [newSale, ...prev]);
+      setIsSaleWizardOpen(false);
+      setCustomerForSale(null);
+    }
   };
   const handleProcessSale = (sale: Sale) => {
     setSaleForPicking(sale);
@@ -152,7 +280,7 @@ const MarketPage: React.FC = () => {
       }
       return lot;
     }));
-    
+
     setSaleForWeighing(null);
   };
 
@@ -220,7 +348,7 @@ const MarketPage: React.FC = () => {
         currentQuantity: newLots[newLotIndex].currentQuantity - weight,
         movements: [...newLots[newLotIndex].movements, { id: `M-MOV-${Date.now()}`, lotId: newLotId, companyId: 'C1', quantity: -weight, type: MovementType.OUT, date: new Date().toISOString().split('T')[0], user: 'M. Rossi', reason: `Spostamento vendita ${saleId}` }]
       };
-      
+
       return newLots;
     });
 
@@ -228,19 +356,32 @@ const MarketPage: React.FC = () => {
     setSales(prevSales => prevSales.map(s => s.id === saleId ? { ...s, lotId: newLotId } : s));
   };
 
-  const handleAccountingAction = (selectedSales: Sale[], action: 'PAY' | 'DDT' | 'INVOICE' | 'SCONTRINO') => {
+  const handleAccountingAction = async (selectedSales: Sale[], action: 'PAY' | 'DDT' | 'INVOICE' | 'SCONTRINO') => {
     const saleIds = selectedSales.map(s => s.id);
     if (action === 'PAY') {
       setSalesForPayment(selectedSales);
       setIsPaymentModalOpen(true);
     } else {
-      setSales(prevSales => prevSales.map(s => {
-        if (saleIds.includes(s.id)) {
-          const docType = action;
-          return { ...s, documentType: docType, documentId: `${docType}-${Date.now()}`, deliveryStatus: 'DELIVERED' };
+      try {
+        const res = await fetch('/api/account/action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ saleIds, action })
+        });
+        if (res.ok) {
+          await fetchApiData(); // Ricarica le vendite col doctype
         }
-        return s;
-      }));
+      } catch (err) {
+        console.error("API error", err);
+        // Fallback locale
+        setSales(prevSales => prevSales.map(s => {
+          if (saleIds.includes(s.id)) {
+            const docType = action === 'INVOICE' ? 'FATTURA' : action;
+            return { ...s, documentType: docType as any, documentId: `${docType}-${Date.now()}`, deliveryStatus: 'DELIVERED' };
+          }
+          return s;
+        }));
+      }
     }
   };
 
@@ -299,18 +440,31 @@ const MarketPage: React.FC = () => {
     setSettlementToRecord({ partner, amount, lotIds });
   };
 
-  const handleConfirmSettlementPayment = (paymentData: Omit<Payable, 'id' | 'creationDate' | 'status'>) => {
-    // In a real app, you would save this to a 'payables' table in the DB
-    console.log("Creating payable:", paymentData);
-    
-    // Close the lots included in the settlement
+  const handleConfirmSettlementPayment = async (paymentData: Omit<Payable, 'id' | 'creationDate' | 'status'>) => {
     if (settlementToRecord) {
-      setLots(prevLots => prevLots.map(lot => {
-        if (settlementToRecord.lotIds.includes(lot.id)) {
-          return { ...lot, status: 'CLOSED' as const, settlementId: `SETT-${Date.now()}` };
+      try {
+        const res = await fetch('/api/account/settlement', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            partnerId: settlementToRecord.partner.id,
+            netAmount: settlementToRecord.amount,
+            lotIds: settlementToRecord.lotIds
+          })
+        });
+        if (res.ok) {
+          await fetchApiData();
         }
-        return lot;
-      }));
+      } catch (err) {
+        console.error("API Fallback", err);
+        // Fallback locale
+        setLots(prevLots => prevLots.map(lot => {
+          if (settlementToRecord.lotIds.includes(lot.id)) {
+            return { ...lot, status: 'CLOSED' as const, settlementId: `SETT-${Date.now()}` };
+          }
+          return lot;
+        }));
+      }
     }
     setSettlementToRecord(null);
   };
@@ -324,18 +478,53 @@ const MarketPage: React.FC = () => {
     }));
   };
 
+  // Product Handlers
+  const handleSaveProduct = async (productData: Product) => {
+    try {
+      const res = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(productData)
+      });
+      if (res.ok) {
+        await fetchApiData();
+      } else {
+        alert("Errore durante il salvataggio del prodotto sul server.");
+      }
+    } catch (err) {
+      console.error("Errore salvataggio prodotto", err);
+      setProducts((prev: Product[]) => [...prev, { ...productData, id: `PROD-${Date.now()}` }]);
+    }
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    try {
+      const res = await fetch(`/api/products/${productId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        await fetchApiData();
+      } else {
+        alert("Errore durante l'eliminazione del prodotto sul server.");
+      }
+    } catch (err) {
+      console.error("Errore eliminazione prodotto", err);
+      setProducts((prev: Product[]) => prev.filter((p: Product) => p.id !== productId));
+    }
+  };
+
   const renderSalesContent = () => (
     <div className="h-full flex flex-col">
       <div className="border-b border-slate-200 mb-4">
         <nav className="-mb-px flex space-x-6">
-          <button onClick={() => setSalesSubTab('accounting')} className={`whitespace-nowrap pb-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${salesSubTab === 'accounting' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}><Users size={16}/> Contabilità Cliente</button>
-          <button onClick={() => setSalesSubTab('journal')} className={`whitespace-nowrap pb-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${salesSubTab === 'journal' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}><BookOpen size={16}/> Partite Attive</button>
-          <button onClick={() => setSalesSubTab('queue')} className={`whitespace-nowrap pb-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${salesSubTab === 'queue' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}><ClipboardList size={16}/> Coda Prelievi</button>
+          <button onClick={() => setSalesSubTab('accounting')} className={`whitespace-nowrap pb-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${salesSubTab === 'accounting' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}><Users size={16} /> Contabilità Cliente</button>
+          <button onClick={() => setSalesSubTab('journal')} className={`whitespace-nowrap pb-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${salesSubTab === 'journal' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}><BookOpen size={16} /> Partite Attive</button>
+          <button onClick={() => setSalesSubTab('queue')} className={`whitespace-nowrap pb-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${salesSubTab === 'queue' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}><ClipboardList size={16} /> Coda Prelievi</button>
         </nav>
       </div>
       <div className="flex-grow min-h-0">
-        {salesSubTab === 'accounting' && <CustomerAccounting sales={sales} partners={partners} onAccountingAction={handleAccountingAction} lots={lots} products={MOCK_PRODUCTS} onUpdateSale={handleUpdateSale} onDeleteSale={handleDeleteSaleRequest} />}
-        {salesSubTab === 'journal' && <DailySalesJournal lots={lots} sales={sales} partners={partners} products={MOCK_PRODUCTS} onMoveSale={handleMoveSaleToLot} />}
+        {salesSubTab === 'accounting' && <CustomerAccounting sales={sales} partners={partners} onAccountingAction={handleAccountingAction} lots={lots} products={products} onUpdateSale={handleUpdateSale} onDeleteSale={handleDeleteSaleRequest} />}
+        {salesSubTab === 'journal' && <DailySalesJournal lots={lots} sales={sales} partners={partners} products={products} onMoveSale={handleMoveSaleToLot} />}
         {salesSubTab === 'queue' && <SalesList sales={sales} partners={partners} onProcessSale={handleProcessSale} />}
       </div>
     </div>
@@ -345,13 +534,13 @@ const MarketPage: React.FC = () => {
     <div className="h-full flex flex-col">
       <div className="border-b border-slate-200 mb-4">
         <nav className="-mb-px flex space-x-6">
-          <button onClick={() => setPartnerSubTab('list')} className={`whitespace-nowrap pb-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${partnerSubTab === 'list' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}><Users size={16}/> Anagrafica</button>
-          <button onClick={() => setPartnerSubTab('payments')} className={`whitespace-nowrap pb-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${partnerSubTab === 'payments' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}><Landmark size={16}/> Pagamenti Fornitori</button>
+          <button onClick={() => setPartnerSubTab('list')} className={`whitespace-nowrap pb-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${partnerSubTab === 'list' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}><Users size={16} /> Anagrafica</button>
+          <button onClick={() => setPartnerSubTab('payments')} className={`whitespace-nowrap pb-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${partnerSubTab === 'payments' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}><Landmark size={16} /> Pagamenti Fornitori</button>
         </nav>
       </div>
       <div className="flex-grow min-h-0">
         {partnerSubTab === 'list' && <PartnerList partners={partners} onNewPartner={handleOpenPartnerModalForCreate} onEditPartner={handleOpenPartnerModalForEdit} onDeletePartner={handleDeletePartnerRequest} onStartSale={handleStartSale} />}
-        {partnerSubTab === 'payments' && <SupplierPayments partners={partners} lots={lots} products={MOCK_PRODUCTS} onMarkAsPaid={handleMarkPurchaseAsPaid} />}
+        {partnerSubTab === 'payments' && <SupplierPayments partners={partners} lots={lots} products={products} onMarkAsPaid={handleMarkPurchaseAsPaid} />}
       </div>
     </div>
   );
@@ -359,17 +548,19 @@ const MarketPage: React.FC = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'magazzino':
-        return <LotList lots={lots} products={MOCK_PRODUCTS} onSelectLot={handleSelectLot} onNewLot={handleOpenLotWizardForCreate} onEditLot={handleOpenLotWizardForEdit} onDeleteLot={handleDeleteLotRequest} />;
+        return <LotList lots={lots} products={products} onSelectLot={handleSelectLot} onNewLot={handleOpenLotWizardForCreate} onEditLot={handleOpenLotWizardForEdit} onDeleteLot={handleDeleteLotRequest} />;
       case 'clienti':
         return renderPartnerContent();
       case 'vendite':
         return renderSalesContent();
       case 'partite':
         return <SettlementList partners={partners} lots={lots} onGenerateSettlement={setPartnerForSettlement} onGenerateSummary={setPartnerForSummary} />;
+      case 'prodotti':
+        return <ProductList products={products} onSaveProduct={handleSaveProduct} onDeleteProduct={handleDeleteProduct} />;
       default:
         return <div className="text-center p-10 bg-slate-100 rounded-lg border-2 border-dashed border-slate-300 h-full flex flex-col justify-center items-center">
-            <h3 className="text-xl font-bold text-slate-700">{tabs.find(t => t.id === activeTab)?.label}</h3>
-            <p className="text-slate-500 mt-2">Funzionalità in fase di sviluppo.</p>
+          <h3 className="text-xl font-bold text-slate-700">{tabs.find(t => t.id === activeTab)?.label}</h3>
+          <p className="text-slate-500 mt-2">Funzionalità in fase di sviluppo.</p>
         </div>;
     }
   };
@@ -379,8 +570,8 @@ const MarketPage: React.FC = () => {
       <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 h-full flex flex-col">
         <div className="border-b border-slate-200 mb-6">
           <nav className="-mb-px flex space-x-6 overflow-x-auto">
-            {tabs.map(tab => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${activeTab === tab.id ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}>
+            {tabs.map((tab: any) => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${activeTab === tab.id ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}>
                 <tab.icon size={16} /> {tab.label}
               </button>
             ))}
@@ -388,31 +579,31 @@ const MarketPage: React.FC = () => {
         </div>
         <div className="flex-grow min-h-0">{renderContent()}</div>
       </div>
-      
-      {selectedLot && <LotDetailModal lot={selectedLot} product={MOCK_PRODUCTS.find(p => p.id === selectedLot.productId)} onClose={handleCloseDetailModal} />}
-      {isLotWizardOpen && <NewLotWizard onClose={handleCloseLotWizard} onSave={handleSaveLot} products={MOCK_PRODUCTS} lotToEdit={lotToEdit} />}
+
+      {selectedLot && <LotDetailModal lot={selectedLot} product={products.find((p: any) => p.id === selectedLot.productId)} onClose={handleCloseDetailModal} />}
+      {isLotWizardOpen && <NewLotWizard onClose={handleCloseLotWizard} onSave={handleSaveLot} products={products} lotToEdit={lotToEdit} onSaveProduct={handleSaveProduct} partners={partners} onSavePartner={handleSavePartner} />}
       {lotToDelete && <ConfirmationModal title="Conferma Eliminazione Lotto" message={`Sei sicuro di voler eliminare il lotto ${lotToDelete.id}? L'azione è irreversibile.`} onConfirm={handleConfirmLotDelete} onCancel={() => setLotToDelete(null)} />}
-      
+
       {isPartnerModalOpen && <PartnerModal onClose={handleClosePartnerModal} onSave={handleSavePartner} partnerToEdit={partnerToEdit} />}
       {partnerToDelete && <ConfirmationModal title="Conferma Eliminazione Partner" message={`Sei sicuro di voler eliminare ${partnerToDelete.name}? L'azione è irreversibile.`} onConfirm={handleConfirmPartnerDelete} onCancel={() => setPartnerToDelete(null)} />}
-      
-      {isSaleWizardOpen && customerForSale && <SaleWizard onClose={() => setIsSaleWizardOpen(false)} onConfirmSale={handleConfirmSale} customer={customerForSale} activeLots={lots.filter(l => l.status === 'ACTIVE')} products={MOCK_PRODUCTS} allSales={sales} allPartners={partners} />}
-      
-      {saleForPicking && <PickingSlipModal sale={saleForPicking} lot={lots.find(l => l.id === saleForPicking.lotId)} customer={partners.find(p => p.id === saleForPicking.customerId)} product={MOCK_PRODUCTS.find(p => p.id === lots.find(l => l.id === saleForPicking.lotId)?.productId)} onClose={() => setSaleForPicking(null)} onStartWeighing={handleStartWeighing} />}
 
-      {saleForWeighing && <WeighingModal sale={saleForWeighing} lot={lots.find(l => l.id === saleForWeighing.lotId)} customer={partners.find(p => p.id === saleForWeighing.customerId)} product={MOCK_PRODUCTS.find(p => p.id === lots.find(l => l.id === saleForWeighing.lotId)?.productId)} onClose={() => setSaleForWeighing(null)} onConfirmWeighing={handleConfirmWeighing} />}
+      {isSaleWizardOpen && customerForSale && <SaleWizard onClose={() => setIsSaleWizardOpen(false)} onConfirmSale={handleConfirmSale} customer={customerForSale} activeLots={lots.filter(l => l.status === 'ACTIVE')} products={products} allSales={sales} allPartners={partners} />}
+
+      {saleForPicking && <PickingSlipModal sale={saleForPicking} lot={lots.find(l => l.id === saleForPicking.lotId)} customer={partners.find(p => p.id === saleForPicking.customerId)} product={products.find((p: any) => p.id === lots.find(l => l.id === saleForPicking.lotId)?.productId)} onClose={() => setSaleForPicking(null)} onStartWeighing={handleStartWeighing} />}
+
+      {saleForWeighing && <WeighingModal sale={saleForWeighing} lot={lots.find(l => l.id === saleForWeighing.lotId)} customer={partners.find(p => p.id === saleForWeighing.customerId)} product={products.find((p: any) => p.id === lots.find(l => l.id === saleForWeighing.lotId)?.productId)} onClose={() => setSaleForWeighing(null)} onConfirmWeighing={handleConfirmWeighing} />}
 
       {isPaymentModalOpen && <PaymentModal sales={salesForPayment} onClose={() => setIsPaymentModalOpen(false)} onConfirmPayment={handleConfirmPayment} />}
-      
+
       {saleToDelete && <ConfirmationModal title="Conferma Annullamento Vendita" message={`Sei sicuro di voler annullare la vendita ${saleToDelete.id}? La quantità verrà ripristinata nel lotto di origine.`} onConfirm={handleConfirmSaleDelete} onCancel={() => setSaleToDelete(null)} />}
 
-      {partnerForSettlement && <SettlementModal partner={partnerForSettlement} lots={lots.filter(l => l.partnerId === partnerForSettlement.id)} sales={sales} products={MOCK_PRODUCTS} onClose={() => setPartnerForSettlement(null)} onStartReturn={handleStartReturn} onStartSettlement={handleStartSettlement} />}
-      
+      {partnerForSettlement && <SettlementModal partner={partnerForSettlement} lots={lots.filter(l => (l as any).supplierId === partnerForSettlement.id || (l as any).partnerId === partnerForSettlement.id)} sales={sales} products={products} onClose={() => setPartnerForSettlement(null)} onStartReturn={handleStartReturn} onStartSettlement={handleStartSettlement} />}
+
       {settlementToRecord && <RecordSettlementPaymentModal settlement={settlementToRecord} onClose={() => setSettlementToRecord(null)} onConfirm={handleConfirmSettlementPayment} />}
 
-      {lotToReturn && <ReturnSlipModal lot={lotToReturn} product={MOCK_PRODUCTS.find(p => p.id === lotToReturn.productId)} partner={partners.find(p => p.id === lotToReturn.partnerId)} onClose={() => setLotToReturn(null)} onConfirmReturn={handleConfirmReturn} />}
+      {lotToReturn && <ReturnSlipModal lot={lotToReturn} product={products.find((p: any) => p.id === lotToReturn.productId)} partner={partners.find(p => p.id === (lotToReturn as any).supplierId || p.id === (lotToReturn as any).partnerId)} onClose={() => setLotToReturn(null)} onConfirmReturn={handleConfirmReturn} />}
 
-      {partnerForSummary && <InstantSummaryModal partner={partnerForSummary} lots={lots.filter(l => l.partnerId === partnerForSummary.id && l.status === 'ACTIVE')} sales={sales} products={MOCK_PRODUCTS} partners={partners} onClose={() => setPartnerForSummary(null)} />}
+      {partnerForSummary && <InstantSummaryModal partner={partnerForSummary} lots={lots.filter(l => ((l as any).supplierId === partnerForSummary.id || (l as any).partnerId === partnerForSummary.id) && l.status === 'ACTIVE')} sales={sales} products={products} partners={partners} onClose={() => setPartnerForSummary(null)} />}
     </>
   );
 };

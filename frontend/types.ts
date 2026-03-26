@@ -25,13 +25,15 @@ export interface Product {
   id: string;
   name: string;
   category: string;
-  unit: 'KG' | 'COLLI' | 'PEZZI';
-  variety: string;
-  caliber: string;
+  unit: 'KG' | 'COLLI' | 'PEZZI' | string;
+  variety?: string;
+  caliber?: string;
+  tareWeight?: number;
+  imageUrl?: string;
 }
 
 export interface StockMovement {
-  id:string;
+  id: string;
   lotId: string;
   companyId: string;
   quantity: number;
@@ -98,44 +100,44 @@ export interface Sale {
 }
 
 export interface Payable {
-    id: string;
-    partnerId: string;
-    amount: number;
-    dueDate: string;
-    status: 'UNPAID' | 'PAID';
-    paymentMethod?: 'Bonifico' | 'Assegno' | 'Contanti';
-    paymentReference?: string;
-    creationDate: string;
-    paymentDate?: string;
-    description: string;
-    relatedLotIds: string[];
+  id: string;
+  partnerId: string;
+  amount: number;
+  dueDate: string;
+  status: 'UNPAID' | 'PAID';
+  paymentMethod?: 'Bonifico' | 'Assegno' | 'Contanti';
+  paymentReference?: string;
+  creationDate: string;
+  paymentDate?: string;
+  description: string;
+  relatedLotIds: string[];
 }
 
 export interface Receivable {
-    id: string;
-    customerId: string;
-    amount: number;
-    dueDate: string;
-    status: 'UNPAID' | 'PAID';
-    creationDate: string;
-    relatedSaleId: string;
+  id: string;
+  customerId: string;
+  amount: number;
+  dueDate: string;
+  status: 'UNPAID' | 'PAID';
+  creationDate: string;
+  relatedSaleId: string;
 }
 
 export interface FinancialAccount {
-    id: string;
-    name: string;
-    balance: number;
-    type: 'BANK' | 'CASH';
+  id: string;
+  name: string;
+  balance: number;
+  type: 'BANK' | 'CASH';
 }
 
 export interface FinancialTransaction {
-    id: string;
-    accountId: string;
-    amount: number;
-    type: 'IN' | 'OUT';
-    date: string;
-    description: string;
-    relatedId?: string; // Payable or Receivable ID
+  id: string;
+  accountId: string;
+  amount: number;
+  type: 'IN' | 'OUT';
+  date: string;
+  description: string;
+  relatedId?: string; // Payable or Receivable ID
 }
 
 export interface BusinessEvent {

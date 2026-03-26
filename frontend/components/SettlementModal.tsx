@@ -1,6 +1,6 @@
 
 import React, { useMemo } from 'react';
-import { X, Printer, CornerLeftUp, CheckCircle } from 'lucide-react';
+import { X, Printer, CornerUpLeft, CheckCircle } from 'lucide-react';
 import { Sale, Lot, Product, Partner } from '../types';
 
 interface SettlementModalProps {
@@ -14,12 +14,12 @@ interface SettlementModalProps {
 }
 
 const SettlementModal: React.FC<SettlementModalProps> = ({ onClose, partner, lots, sales, products, onStartReturn, onStartSettlement }) => {
-  
+
   const settlementData = useMemo(() => {
     let totalRevenue = 0;
     const lotsDetails = lots.map(lot => {
       const salesForLot = sales.filter(s => s.lotId === lot.id && s.status === 'COMPLETED');
-      
+
       const salesByPrice = salesForLot.reduce((acc, sale) => {
         const priceKey = sale.price.toFixed(2);
         if (!acc[priceKey]) {
@@ -33,7 +33,7 @@ const SettlementModal: React.FC<SettlementModalProps> = ({ onClose, partner, lot
 
       const lotRevenue = Object.entries(salesByPrice).reduce((sum, [price, data]) => sum + (parseFloat(price) * data.totalWeight), 0);
       totalRevenue += lotRevenue;
-      
+
       const totalPackagesSold = salesForLot.reduce((sum, s) => sum + s.numberOfPackages, 0);
       const remainingPackages = lot.numberOfPackages - totalPackagesSold;
 
@@ -69,7 +69,7 @@ const SettlementModal: React.FC<SettlementModalProps> = ({ onClose, partner, lot
           </div>
           <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-100"><X size={24} /></button>
         </div>
-        
+
         <div className="flex-grow overflow-y-auto p-6 space-y-6">
           {settlementData.lotsDetails.map(({ lot, product, salesByPrice, totalPackagesSold, remainingPackages }) => (
             <div key={lot.id} className="border border-slate-200 rounded-lg">
@@ -96,7 +96,7 @@ const SettlementModal: React.FC<SettlementModalProps> = ({ onClose, partner, lot
                 <div className="mt-3 pt-3 border-t text-sm space-y-1">
                   <div className="flex justify-between"><span className="font-semibold">Totale Colli Venduti:</span><span>{totalPackagesSold}</span></div>
                   <div className="flex justify-between"><span className="font-semibold">Rimanenza Colli:</span><span className="font-bold text-red-600">{remainingPackages}</span></div>
-                  {remainingPackages > 0 && lot.status === 'ACTIVE' && <button onClick={() => onStartReturn(lot)} className="text-xs text-blue-600 hover:underline mt-1 flex items-center gap-1"><CornerLeftUp size={12}/> Registra Ritiro Fornitore ({remainingPackages} colli)</button>}
+                  {remainingPackages > 0 && lot.status === 'ACTIVE' && <button onClick={() => onStartReturn(lot)} className="text-xs text-blue-600 hover:underline mt-1 flex items-center gap-1"><CornerUpLeft size={12} /> Registra Ritiro Fornitore ({remainingPackages} colli)</button>}
                 </div>
               </div>
             </div>

@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Lot, Product } from '../types';
+import { Lot, Product, Partner } from '../types';
 import { X, ArrowRight, ArrowLeft, ShoppingBag, User, Package, Scale, DollarSign, Percent, CheckCircle, Hash } from 'lucide-react';
 
 interface NewLotWizardProps {
@@ -8,9 +8,12 @@ interface NewLotWizardProps {
   onSave: (lotData: any) => void;
   products: Product[];
   lotToEdit?: Lot | null;
+  onSaveProduct?: (productData: Product) => void;
+  partners?: Partner[];
+  onSavePartner?: (partnerData: Partner) => void;
 }
 
-const NewLotWizard: React.FC<NewLotWizardProps> = ({ onClose, onSave, products, lotToEdit }) => {
+const NewLotWizard: React.FC<NewLotWizardProps> = ({ onClose, onSave, products, lotToEdit, onSaveProduct, partners = [], onSavePartner }) => {
   const [step, setStep] = useState(lotToEdit ? 2 : 1);
   const [acquisitionType, setAcquisitionType] = useState<'PURCHASE' | 'CONSIGNMENT'>(lotToEdit?.acquisitionType || 'PURCHASE');
   const [lotData, setLotData] = useState({
@@ -24,6 +27,13 @@ const NewLotWizard: React.FC<NewLotWizardProps> = ({ onClose, onSave, products, 
     numberOfPackages: 0,
     tarePerPackage: 0,
   });
+
+  const [isAddingProduct, setIsAddingProduct] = useState(false);
+  const [newProductName, setNewProductName] = useState('');
+  const [newProductCategory, setNewProductCategory] = useState('Frutta');
+
+  const [isAddingPartner, setIsAddingPartner] = useState(false);
+  const [newPartnerName, setNewPartnerName] = useState('');
 
   useEffect(() => {
     if (lotToEdit) {
@@ -80,6 +90,49 @@ const NewLotWizard: React.FC<NewLotWizardProps> = ({ onClose, onSave, products, 
     onSave(finalData);
   };
 
+  const handleQuickAddProduct = async () => {
+    if (!newProductName.trim()) return;
+
+    const newId = `PROD-${Date.now()}`;
+    const newProduct: Product = {
+      id: newId,
+      name: newProductName,
+      category: newProductCategory,
+      unit: 'KG', // Default unit for simplicity
+      tareWeight: 0, // default
+    };
+
+    if (onSaveProduct) {
+      await onSaveProduct(newProduct);
+      setLotData(prev => ({ ...prev, productId: newId }));
+      setIsAddingProduct(false);
+      setNewProductName('');
+      setNewProductCategory('Frutta');
+    }
+  };
+
+  const handleQuickAddPartner = async () => {
+    if (!newPartnerName.trim()) return;
+
+    const newId = `P-${Date.now()}`;
+    const newPartner: Partner = {
+      id: newId,
+      name: newPartnerName,
+      type: acquisitionType === 'PURCHASE' ? 'FORNITORE' : 'PRODUTTORE',
+      vat: 'N/A', // O qualcosa da far completare
+      address: '',
+      email: '',
+      phone: ''
+    } as Partner;
+
+    if (onSavePartner) {
+      await onSavePartner(newPartner);
+      setLotData(prev => ({ ...prev, partnerId: newId }));
+      setIsAddingPartner(false);
+      setNewPartnerName('');
+    }
+  };
+
   const renderStep1 = () => (
     <div>
       <h3 className="text-lg font-bold text-slate-800 mb-4">Step 1: Tipo di Ingresso Merce</h3>
@@ -114,14 +167,63 @@ const NewLotWizard: React.FC<NewLotWizardProps> = ({ onClose, onSave, products, 
           <label className="block text-sm font-medium text-slate-700 mb-1">
             {acquisitionType === 'PURCHASE' ? 'Fornitore' : 'Produttore (Proprietario)'}
           </label>
-          <input type="text" name="partnerId" value={lotData.partnerId} onChange={handleChange} className="w-full p-2 border rounded-lg" placeholder={acquisitionType === 'PURCHASE' ? 'ID Fornitore' : 'Es. Gino'} />
+          {isAddingPartner ? (
+            <div className="flex flex-col gap-2 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+              <input type="text" placeholder="Ragione Sociale o Nome" value={newPartnerName} onChange={e => setNewPartnerName(e.target.value)} className="w-full p-2 border rounded-lg text-sm" />
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setIsAddingPartner(false)} className="w-1/2 bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-300">Annulla</button>
+                <button type="button" onClick={handleQuickAddPartner} className="w-1/2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700">
+                  Salva
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <select name="partnerId" value={lotData.partnerId} onChange={handleChange} className="w-full p-2 border rounded-lg">
+                <option value="">Seleziona...</option>
+                {partners
+                  .filter(p => acquisitionType === 'PURCHASE' ? p.type === 'FORNITORE' : p.type === 'PRODUTTORE')
+                  .map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+              {onSavePartner && (
+                <button type="button" onClick={() => setIsAddingPartner(!isAddingPartner)} className="whitespace-nowrap bg-emerald-50 text-emerald-600 border border-emerald-200 px-3 py-2 rounded-lg text-sm hover:bg-emerald-100 font-semibold">
+                  + Nuovo
+                </button>
+              )}
+            </div>
+          )}
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Prodotto</label>
-          <select name="productId" value={lotData.productId} onChange={handleChange} className="w-full p-2 border rounded-lg">
-            <option value="">Seleziona un prodotto...</option>
-            {products.map(p => <option key={p.id} value={p.id}>{p.name} - {p.variety}</option>)}
-          </select>
+          <div className="flex justify-between items-center mb-1">
+            <label className="block text-sm font-medium text-slate-700">Prodotto</label>
+            {onSaveProduct && (
+              <button type="button" onClick={() => setIsAddingProduct(!isAddingProduct)} className="text-xs text-emerald-600 font-semibold hover:text-emerald-700 border border-emerald-200 px-2 py-1 rounded-md bg-emerald-50">
+                {isAddingProduct ? 'Annulla' : '+ Aggiungi Nuovo'}
+              </button>
+            )}
+          </div>
+
+          {isAddingProduct ? (
+            <div className="flex flex-col gap-2 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+              <input type="text" placeholder="Nome nuovo prodotto (es. Fragole)" value={newProductName} onChange={e => setNewProductName(e.target.value)} className="w-full p-2 border rounded-lg text-sm" />
+              <div className="flex gap-2">
+                <select value={newProductCategory} onChange={e => setNewProductCategory(e.target.value)} className="w-1/2 p-2 border rounded-lg text-sm">
+                  <option value="Frutta">Frutta</option>
+                  <option value="Ortaggi">Ortaggi</option>
+                  <option value="Agrumi">Agrumi</option>
+                  <option value="Altro">Altro</option>
+                </select>
+                <button type="button" onClick={handleQuickAddProduct} className="w-1/2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700">
+                  Salva e Seleziona
+                </button>
+              </div>
+            </div>
+          ) : (
+            <select name="productId" value={lotData.productId} onChange={handleChange} className="w-full p-2 border rounded-lg">
+              <option value="">Seleziona un prodotto...</option>
+              {products.map(p => <option key={p.id} value={p.id}>{p.name} {p.variety ? `- ${p.variety}` : ''}</option>)}
+            </select>
+          )}
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -147,28 +249,28 @@ const NewLotWizard: React.FC<NewLotWizardProps> = ({ onClose, onSave, products, 
       <p className="text-sm text-slate-600 mb-6">Definisci il peso e i dettagli economici.</p>
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-            <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Numero Colli</label>
-                <input type="number" name="numberOfPackages" value={lotData.numberOfPackages} onChange={handleChange} className="w-full p-2 border rounded-lg" />
-            </div>
-            <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Tara per Collo (Kg)</label>
-                <input type="number" step="0.01" name="tarePerPackage" value={lotData.tarePerPackage} onChange={handleChange} className="w-full p-2 border rounded-lg" placeholder="Es. 0.500" />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Numero Colli</label>
+            <input type="number" name="numberOfPackages" value={lotData.numberOfPackages} onChange={handleChange} className="w-full p-2 border rounded-lg" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Tara per Collo (Kg)</label>
+            <input type="number" step="0.01" name="tarePerPackage" value={lotData.tarePerPackage} onChange={handleChange} className="w-full p-2 border rounded-lg" placeholder="Es. 0.500" />
+          </div>
         </div>
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">Peso Lordo Totale (Kg)</label>
           <input type="number" name="grossWeight" value={lotData.grossWeight} onChange={handleChange} className="w-full p-2 border rounded-lg" />
         </div>
         <div className="grid grid-cols-2 gap-4">
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
-                <p className="text-sm text-blue-700">Peso Lordo per Collo</p>
-                <p className="text-2xl font-bold text-blue-600">{calculatedGrossWeightPerPackage.toFixed(2)} Kg</p>
-            </div>
-            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-center">
-                <p className="text-sm text-emerald-700">Peso Netto Stimato</p>
-                <p className="text-2xl font-bold text-emerald-600">{calculatedNetWeight.toFixed(2)} Kg</p>
-            </div>
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
+            <p className="text-sm text-blue-700">Peso Lordo per Collo</p>
+            <p className="text-2xl font-bold text-blue-600">{calculatedGrossWeightPerPackage.toFixed(2)} Kg</p>
+          </div>
+          <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-center">
+            <p className="text-sm text-emerald-700">Peso Netto Stimato</p>
+            <p className="text-2xl font-bold text-emerald-600">{calculatedNetWeight.toFixed(2)} Kg</p>
+          </div>
         </div>
         {acquisitionType === 'PURCHASE' ? (
           <div>
