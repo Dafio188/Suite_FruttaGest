@@ -172,6 +172,15 @@ export interface UserPermissions {
   schema: boolean;
 }
 
+export interface ModuleRequest {
+  id: string;
+  userId: string;
+  userName: string;
+  moduleId: keyof UserPermissions;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  timestamp: string;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -179,4 +188,5 @@ export interface User {
   role: 'ADMIN' | 'OPERATOR';
   avatar?: string;
   permissions: UserPermissions;
+  pendingRequests: (keyof UserPermissions)[];
 }

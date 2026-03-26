@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { getAIInsights } from '../services/geminiService';
 import { MOCK_LOTS, MOCK_PRODUCTS } from '../constants';
-import { User, UserPermissions } from '../types';
+import { User, UserPermissions, ModuleRequest } from '../types';
 import { 
   TrendingUp, 
   AlertCircle, 
@@ -12,7 +12,10 @@ import {
   BarChart as BarChartIcon,
   ShieldCheck,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  Clock,
+  X,
+  Check
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -28,9 +31,16 @@ import {
 interface DashboardPageProps {
   user: User | null;
   onTogglePermission: (module: keyof UserPermissions) => void;
+  moduleRequests: ModuleRequest[];
+  onProcessRequest: (requestId: string, status: 'APPROVED' | 'REJECTED') => void;
 }
 
-const DashboardPage: React.FC<DashboardPageProps> = ({ user, onTogglePermission }) => {
+const DashboardPage: React.FC<DashboardPageProps> = ({ 
+  user, 
+  onTogglePermission, 
+  moduleRequests, 
+  onProcessRequest 
+}) => {
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiResponse, setAiResponse] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -101,6 +111,61 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, onTogglePermission 
                     </button>
                   ))}
                 </div>
+
+                {/* Pending Requests Table */}
+                {moduleRequests.filter(r => r.status === 'PENDING').length > 0 && (
+                  <div className="mt-8 pt-8 border-t border-white/10">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Clock size={18} className="text-emerald-400" />
+                      <h4 className="font-bold text-lg">Richieste Moduli in Attesa</h4>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="text-emerald-100/40 text-[10px] uppercase tracking-widest border-b border-white/5">
+                            <th className="pb-3 px-4 font-normal">Utente</th>
+                            <th className="pb-3 px-4 font-normal">Modulo</th>
+                            <th className="pb-3 px-4 font-normal">Data Richiesta</th>
+                            <th className="pb-3 px-4 font-normal text-right">Azioni</th>
+                          </tr>
+                        </thead>
+                        <tbody className="text-sm">
+                          {moduleRequests.filter(r => r.status === 'PENDING').map((req) => (
+                            <tr key={req.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                              <td className="py-4 px-4 font-bold">{req.userName}</td>
+                              <td className="py-4 px-4">
+                                <span className="bg-white/10 px-2 py-1 rounded-lg text-xs font-medium">
+                                  {req.moduleId.toUpperCase()}
+                                </span>
+                              </td>
+                              <td className="py-4 px-4 text-emerald-100/60">
+                                {new Date(req.timestamp).toLocaleDateString()}
+                              </td>
+                              <td className="py-4 px-4 text-right">
+                                <div className="flex justify-end gap-2">
+                                  <button 
+                                    onClick={() => onProcessRequest(req.id, 'REJECTED')}
+                                    className="p-2 bg-red-500/20 text-red-400 rounded-xl hover:bg-red-500 hover:text-white transition-all"
+                                    title="Rifiuta"
+                                  >
+                                    <X size={16} />
+                                  </button>
+                                  <button 
+                                    onClick={() => onProcessRequest(req.id, 'APPROVED')}
+                                    className="p-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20"
+                                    title="Approva"
+                                  >
+                                    <Check size={16} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
              </div>
           </div>
         </div>
