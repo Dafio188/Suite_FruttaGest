@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sprout } from 'lucide-react';
+import { Sprout, ArrowLeft } from 'lucide-react';
 import { LoginForm, RegisterForm, RecoverForm } from './AuthForms';
 
 interface SlidingAuthContainerProps {
@@ -84,6 +84,16 @@ const SlidingAuthContainer: React.FC<SlidingAuthContainerProps> = ({ onLogin }) 
               <Sprout size={32} />
               <span className="text-2xl font-black tracking-tighter">FruttaGest</span>
             </motion.div>
+
+            {/* Back to Home Button (Exit) */}
+            <motion.a
+                href="https://www.fruttagest.it"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="absolute top-10 left-10 flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 rounded-full text-xs font-bold transition-all z-30"
+            >
+                <ArrowLeft size={14} /> Torna al Sito
+            </motion.a>
 
             <AnimatePresence mode="wait">
               {isLogin ? (

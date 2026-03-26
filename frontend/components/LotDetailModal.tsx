@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Lot, Product, MovementType } from '../types';
-import { X, Package, Calendar, Scale, DollarSign, BrainCircuit, Send, ArrowDown, ArrowUp, Trash2, Edit, Info, ShoppingBag, Percent, Hash } from 'lucide-react';
+import { X, Package, Calendar, Scale, DollarSign, BrainCircuit, Send, ArrowDown, ArrowUp, Trash2, Edit, Info, ShoppingBag, Percent, Hash, Globe } from 'lucide-react';
 import { getAIInsights } from '../services/geminiService';
 
 interface LotDetailModalProps {
@@ -73,8 +73,17 @@ const LotDetailModal: React.FC<LotDetailModalProps> = ({ lot, product, onClose }
                 {lot.acquisitionType === 'CONSIGNMENT' && <div className="flex items-center gap-3"><Percent size={16} className="text-slate-400" /><span><strong>Commissione:</strong> {lot.commissionRate}%</span></div>}
                 <div className="flex items-center gap-3"><Scale size={16} className="text-slate-400" /><span><strong>Peso Netto Iniz.:</strong> {initialNetWeight.toFixed(2)} kg</span></div>
                 <div className="flex items-center gap-3"><Scale size={16} className="text-emerald-500" /><span><strong>Q.tà Attuale:</strong> {lot.currentQuantity.toFixed(2)} kg</span></div>
-                <div className="flex items-center gap-3">
-                  <span className={`px-2 py-1 rounded-full text-xs font-bold ${getStatusBadge(lot.status)}`}>{lot.status}</span>
+                <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-xl border border-emerald-100 mt-4">
+                  <div className="flex items-center gap-3">
+                    <Globe size={18} className="text-emerald-600" />
+                    <div>
+                      <p className="text-xs font-bold text-emerald-800 uppercase tracking-tighter">Visibilità Web</p>
+                      <p className="text-[10px] text-emerald-600">Mostra su fruttagest.it</p>
+                    </div>
+                  </div>
+                  <div className="w-10 h-5 bg-emerald-500 rounded-full relative p-1 cursor-pointer">
+                    <div className="w-3 h-3 bg-white rounded-full absolute right-1"></div>
+                  </div>
                 </div>
               </div>
             </div>

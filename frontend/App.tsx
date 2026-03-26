@@ -8,7 +8,7 @@ import RetailPage from './components/RetailPage';
 import ProPage from './components/ProPage';
 import SchemaPage from './components/SchemaPage';
 import AccountingPage from './components/AccountingPage';
-import { Sprout } from 'lucide-react';
+import { Sprout, LayoutDashboard } from 'lucide-react';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -52,13 +52,28 @@ const App: React.FC = () => {
       
       <main className="flex-1 ml-64 p-8">
         <header className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800 capitalize">
-              {activePage.replace('-', ' ')}
-            </h1>
-            <p className="text-slate-500">Benvenuto in FruttaGest, la tua suite operativa.</p>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setActivePage('dashboard')}
+              className="p-2 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-emerald-600 hover:border-emerald-200 transition-all shadow-sm"
+              title="Torna alla Dashboard"
+            >
+              <LayoutDashboard size={20} />
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold text-slate-800 capitalize">
+                {activePage.replace('-', ' ')}
+              </h1>
+              <p className="text-slate-500">Benvenuto in FruttaGest, la tua suite operativa.</p>
+            </div>
           </div>
           <div className="flex items-center gap-4">
+            <a 
+              href="https://www.fruttagest.it"
+              className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-200 transition-colors flex items-center gap-2"
+            >
+              Torna al Sito
+            </a>
             <div className="text-right">
               <p className="text-sm font-bold text-slate-800">Mario Rossi</p>
               <p className="text-xs text-slate-500">Amministratore</p>
