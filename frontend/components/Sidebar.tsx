@@ -1,5 +1,5 @@
 
-import React from 'react';
+import { User, UserPermissions } from '../types';
 import { 
   LayoutDashboard, 
   Package, 
@@ -12,23 +12,25 @@ import {
   Building,
   LogOut,
   Sprout,
-  Landmark
+  Landmark,
+  Lock
 } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   onLogout: () => void;
+  user: User | null;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onLogout }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onLogout, user }) => {
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'market', label: 'Modulo Market', icon: Truck },
-    { id: 'accounting', label: 'Contabilità', icon: Landmark },
-    { id: 'pro', label: 'Modulo PRO', icon: Building },
-    { id: 'retail', label: 'Modulo Retail', icon: Store },
-    { id: 'schema', label: 'Schema Tecnico', icon: Database },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, permission: null },
+    { id: 'market', label: 'Modulo Market', icon: Truck, permission: 'market' as keyof UserPermissions },
+    { id: 'accounting', label: 'Contabilità', icon: Landmark, permission: 'accounting' as keyof UserPermissions },
+    { id: 'pro', label: 'Modulo PRO', icon: Building, permission: 'pro' as keyof UserPermissions },
+    { id: 'retail', label: 'Modulo Retail', icon: Store, permission: 'retail' as keyof UserPermissions },
+    { id: 'schema', label: 'Schema Tecnico', icon: Database, permission: 'schema' as keyof UserPermissions },
   ];
 
   return (
@@ -42,20 +44,27 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onLogout }) 
       </div>
       
       <nav className="flex-1 mt-6 px-4 space-y-2">
-        {menuItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => setActiveTab(item.id)}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
-              activeTab === item.id 
-                ? 'bg-emerald-600 text-white' 
-                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <item.icon size={20} />
-            <span className="font-medium">{item.label}</span>
-          </button>
-        ))}
+        {menuItems.map((item) => {
+          const hasPermission = item.permission ? user?.permissions[item.permission] : true;
+          
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-left transition-colors ${
+                activeTab === item.id 
+                  ? 'bg-emerald-600 text-white' 
+                  : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+              } ${!hasPermission ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <div className="flex items-center gap-3">
+                <item.icon size={20} />
+                <span className="font-medium">{item.label}</span>
+              </div>
+              {!hasPermission && <Lock size={14} className="text-slate-500" />}
+            </button>
+          );
+        })}
       </nav>
 
       <div className="p-4 border-t border-slate-800">

@@ -2,13 +2,17 @@
 import React, { useState } from 'react';
 import { getAIInsights } from '../services/geminiService';
 import { MOCK_LOTS, MOCK_PRODUCTS } from '../constants';
+import { User, UserPermissions } from '../types';
 import { 
   TrendingUp, 
   AlertCircle, 
   CheckCircle2, 
   MessageSquare, 
   Send,
-  BarChart as BarChartIcon
+  BarChart as BarChartIcon,
+  ShieldCheck,
+  ToggleLeft,
+  ToggleRight
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -21,7 +25,12 @@ import {
   Legend
 } from 'recharts';
 
-const DashboardPage: React.FC = () => {
+interface DashboardPageProps {
+  user: User | null;
+  onTogglePermission: (module: keyof UserPermissions) => void;
+}
+
+const DashboardPage: React.FC<DashboardPageProps> = ({ user, onTogglePermission }) => {
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiResponse, setAiResponse] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -47,6 +56,56 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Admin Management Section */}
+      {user?.role === 'ADMIN' && (
+        <div className="grid grid-cols-1 gap-6">
+          <div className="bg-emerald-900 text-white p-8 rounded-[32px] shadow-2xl relative overflow-hidden">
+             {/* Background Decoration */}
+             <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl -mr-20 -mt-20" />
+             
+             <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-xl">
+                    <ShieldCheck size={24} className="text-emerald-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black">Centro Abilitazioni Moduli</h3>
+                    <p className="text-emerald-100/60 text-sm italic">Gestisci l'accesso ai servizi premium per questo account</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[
+                    { id: 'market', label: 'Modulo Market', desc: 'Logistica Ingrosso' },
+                    { id: 'pro', label: 'Modulo PRO', desc: 'AI WhatsApp & B2B' },
+                    { id: 'retail', label: 'Modulo Retail', desc: 'Smart POS & E-commerce' }
+                  ].map((mod) => (
+                    <button 
+                      key={mod.id}
+                      onClick={() => onTogglePermission(mod.id as keyof UserPermissions)}
+                      className={`flex items-center justify-between p-5 rounded-2xl border transition-all ${
+                        user.permissions[mod.id as keyof UserPermissions] 
+                        ? 'bg-white/10 border-white/20 hover:bg-white/20' 
+                        : 'bg-black/20 border-white/5 opacity-60 hover:opacity-100'
+                      }`}
+                    >
+                      <div className="text-left">
+                        <p className="font-bold text-sm">{mod.label}</p>
+                        <p className="text-[10px] uppercase tracking-widest opacity-50">{mod.desc}</p>
+                      </div>
+                      {user.permissions[mod.id as keyof UserPermissions] ? (
+                        <ToggleRight size={32} className="text-emerald-400" />
+                      ) : (
+                        <ToggleLeft size={32} className="text-white/20" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+             </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
           <div className="flex justify-between items-start">

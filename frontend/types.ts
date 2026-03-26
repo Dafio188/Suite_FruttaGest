@@ -163,3 +163,20 @@ export interface MarginCalculation {
   netWeight: number;
   realMargin: number;
 }
+
+export interface UserPermissions {
+  market: boolean;
+  pro: boolean;
+  retail: boolean;
+  accounting: boolean;
+  schema: boolean;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'ADMIN' | 'OPERATOR';
+  avatar?: string;
+  permissions: UserPermissions;
+}
