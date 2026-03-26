@@ -17,6 +17,12 @@ const SlidingAuthContainer: React.FC<SlidingAuthContainerProps> = ({ onLogin }) 
     setShowRecover(false);
   };
 
+  const handleGoogleLogin = () => {
+    // In un'implementazione reale, qui chiameresti l'SDK di Google o il tuo endpoint di auth
+    console.log("Inizializzazione Google Auth...");
+    onLogin(); // Call onLogin after successful Google auth
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-100 p-6 font-sans">
       {/* Background Decor */}
@@ -35,14 +41,15 @@ const SlidingAuthContainer: React.FC<SlidingAuthContainerProps> = ({ onLogin }) 
         <div className="w-1/2 flex items-center justify-center bg-white">
           <AnimatePresence mode="wait">
             {!isLogin ? (
-              <RegisterForm key="register" onSuccess={onLogin} />
+              <RegisterForm key="register" onSuccess={onLogin} onGoogleLogin={handleGoogleLogin} />
             ) : showRecover ? (
               <RecoverForm key="recover" onBack={() => setShowRecover(false)} />
             ) : (
               <LoginForm 
                 key="login-left" 
                 onSuccess={onLogin} 
-                onSwitchToRecover={() => setShowRecover(true)} 
+                onSwitchToRecover={() => setShowRecover(true)}
+                onGoogleLogin={handleGoogleLogin}
               />
             )}
           </AnimatePresence>
